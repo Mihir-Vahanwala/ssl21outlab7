@@ -66,50 +66,35 @@ public class ScotlandYard implements Runnable{
 
 				
 
-				Socket socket;
-				
+				Socket socket = null;
+				boolean fugitiveIn;
 				
 				/*
-				listen for two clients: one to play fugitive, one to play Detective 0
-				only then can we begin a game
+				listen for a client to play fugitive, and spawn the moderator.
 				
 				here, it is actually ok to edit this.board.dead, because the game hasn't begun
 				*/
-				while (true){
+				
+				do{
+					fugitiveIn = true;
 					try {
 						socket = this.server.accept();
 					} 
 					catch (SocketTimeoutException t) {
+						fugitiveIn = false;
 						continue;
 					}
+				} while (!fugitiveIn);
 					
-					this.board.threadInfoProtector.acquire();
-					if (this.board.dead){
-						this.threadPool.execute(new ServerThread(this.board, -1, socket));
-						this.board.totalThreads += 1;
-						this.board.dead = false;
-						this.board.threadInfoProtector.release();
-						socket = null;
-						continue;
-					}
-					
-					else {
-						int zero = this.board.getAvailableID();
-						this.threadPool.execute(new ServerThread(this.board, zero, socket));
-						this.board.totalThreads += 1;
-						this.board.threadInfoProtector.release();
-						socket = null;
-						break;
-					}
+				this.board.threadInfoProtector.acquire();
+				this.board.totalThreads += 1;
+				this.board.dead = false;
+				this.threadPool.execute(new ServerThread(this.board, -1, socket));
+				this.board.threadInfoProtector.release();
 
-				}
-				
-				
-				//Ready to start playing! spawn the moderator thread
 				Thread mod = new Thread(new Moderator(board));
 				mod.start();
-				
-				
+
 				
 				while (true){
 

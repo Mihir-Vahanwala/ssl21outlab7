@@ -26,7 +26,12 @@ public class ServerThread implements Runnable{
 		
 		this.registered = false;
 
-		this.roundsPlayed = 0;
+		if (id == -1){
+			this.roundsPlayed = -1;
+		}
+		else{
+			this.roundsPlayed = 0;
+		}
 
 		this.socket = socket;
 	}
@@ -99,55 +104,62 @@ public class ServerThread implements Runnable{
 
 				*/
 
-				String cmd = "";
-				try {
-					cmd = input.readLine();
-				} 
-				catch (IOException i) {
-					
-					this.board.threadInfoProtector.acquire();
-					this.board.erasePlayer(this.id);
-					this.board.threadInfoProtector.release();
-
-					// release everything socket related
-					quit = true;
-					walkaway = true;
-					input.close();
-					output.close();
-					socket.close();
-				}
-
-				if (cmd.equals("Q")) {
-					// client wants to disconnect, so that is that.
-					this.board.threadInfoProtector.acquire();
-					this.board.erasePlayer(this.id);
-					this.board.threadInfoProtector.release();
-
-					// release everything socket related
-					quit = true;
-					walkaway = true;
-					input.close();
-					output.close();
-					socket.close();
+				if (this.id == -1 && this.roundsPlayed == -1){
+					target = 42;
 				}
 
 				else{
-					try{
-						target = Integer.parseInt(cmd);
+
+					String cmd = "";
+					try {
+						cmd = input.readLine();
+					} 
+					catch (IOException i) {
+						
+						this.board.threadInfoProtector.acquire();
+						this.board.erasePlayer(this.id);
+						this.board.threadInfoProtector.release();
+
+						// release everything socket related
+						quit = true;
+						walkaway = true;
+						input.close();
+						output.close();
+						socket.close();
 					}
-					catch(Exception e){
-						/*
-						do nothing for a mispressed key
-						*/
-						target = -1;
+
+					if (cmd.equals("Q")) {
+						// client wants to disconnect, so that is that.
+						this.board.threadInfoProtector.acquire();
+						this.board.erasePlayer(this.id);
+						this.board.threadInfoProtector.release();
+
+						// release everything socket related
+						quit = true;
+						walkaway = true;
+						input.close();
+						output.close();
+						socket.close();
 					}
+
+					else{
+						try{
+							target = Integer.parseInt(cmd);
+						}
+						catch(Exception e){
+							/*
+							do nothing for a mispressed key
+							*/
+							target = -1;
+						}
+					}
+
 				}
 
 
 				/*
 				In the synchronization here, playingThreads is sacrosanct.
 				DO NOT touch it!
-				(acquiring the lock to modify it is inefficient)
 				
 				Note that the only thread that can write to playingThreads is
 				the Moderator, and it doesn't have the permit to run until we 
@@ -163,7 +175,9 @@ public class ServerThread implements Runnable{
 				if (!this.registered){
 					this.board.registration.acquire();
 					this.registered = true;
+					this.board.threadInfoProtector.acquire();
 					this.board.installPlayer(id);
+					this.board.threadInfoProtector.release();
 				}
 
 				this.board.reentry.acquire();
@@ -204,17 +218,28 @@ public class ServerThread implements Runnable{
 				PART 3___________________________________
 				play the move you read in PART 1 
 				if you haven't decided to quit
+
+				if the fugitive is making it's first move,
+				then grab a lock and set embryo to false
 				*/
 
 				if (!quit){
 					this.roundsPlayed += 1;
+					
 					if (this.id == -1){
+						if (this.roundsPlayed == 0){
+							this.board.threadInfoProtector.acquire();
+							this.board.embryo = false;
+							this.board.threadInfoProtector.release();
+						}
 						this.board.moveFugitive(target);
 					}
 
 					else{
 						this.board.moveDetective(this.id, target);
 					}
+
+					
 						
 				}
 				
@@ -251,14 +276,16 @@ public class ServerThread implements Runnable{
 				It is here that everyone can detect if the game is over in this round, and decide to quit
 				*/
 
-				if (!walkaway){
+				if (!walkaway && this.roundsPlayed > 0){
 					String feedback;
+					
 					if (this.id == -1){
 						feedback = this.board.showFugitive();
 					}
 					else{
 						feedback = this.board.showDetective(this.id);
 					}
+					
 
 					//pass this to the client via the socket output
 					try{

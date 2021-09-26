@@ -25,6 +25,7 @@ public class Moderator implements Runnable{
 				this.board.moderatorEnabler.acquire();
 				this.board.threadInfoProtector.acquire();
 
+
 				/* 
 				look at the thread info, and decide how many threads can be 
 				permitted to play next round
@@ -34,27 +35,30 @@ public class Moderator implements Runnable{
 				totalThreads: how many are ready to play next round
 
 				RECALL the invariant mentioned in Board.java
+
+				T = P - Q + N
+
+				P - Q is guaranteed to be non-negative.
 				*/
+
+				//base case
+				
+				if (this.board.embryo){
+					this.board.playingThreads = 1;
+					this.board.registration.release(1);
+					this.board.reentry.release(1);
+					this.board.threadInfoProtector.release();
+					continue;
+				}
 				
 				
 				//find out how many newbies
 				int newbies = this.board.totalThreads - this.board.playingThreads + this.board.quitThreads;
 
-	
 
 				/*
-				If ALL threads quit last round, it means game over
-				We can set dead to true
-				*/
-
-				if (this.board.playingThreads == this.board.quitThreads && this.board.playingThreads != 0){
-					this.board.dead = true;
-				}
-
-
-				/*
-				If there ARE no threads, it means Game Over, and there are no 
-				more new threads to "reap". In particular, we can set dead to true, then 
+				If there are no threads, it means Game Over, and there are no 
+				more new threads to "reap". dead has been set to true, then 
 				the server won't spawn any more threads when it gets the lock.
 
 				Thus, the moderator's job will be done, and this thread can terminate.
@@ -62,7 +66,6 @@ public class Moderator implements Runnable{
 				*/
 
 				if (this.board.totalThreads == 0){
-					this.board.dead = true;
 					this.board.threadInfoProtector.release();
 					return;
 				}

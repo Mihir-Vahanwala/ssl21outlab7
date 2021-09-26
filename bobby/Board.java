@@ -45,8 +45,11 @@ public class Board{
 
 	public boolean[] availableIDs;
 
-	//is it playing anymore?
+	//is it playing?
 	public boolean dead;
+
+	//has no move been played? helpful in intialisation
+	public boolean embryo;
 
 	//_________________________________________________________________________________
 	
@@ -84,6 +87,7 @@ public class Board{
 		this.playingThreads = 0;
 		this.quitThreads = 0;
 		this.dead = true;
+		this.embryo = true;
 
 		this.countProtector = new Semaphore(1); //mutex for count
 		this.barrier1 = new Semaphore(0); //permits for first part of cyclic barrier
@@ -130,6 +134,26 @@ public class Board{
 		return;
 	}
 
+	/* 
+	one-liner to install players on the map. Guaranteed to be called by
+	a unique thread
+	*/
+	public void installPlayer(int id) {
+		if (id == -1) {
+			this.fugitive = 42;
+			return;
+		}
+		this.detectives[id] = 0;
+	}
+
+	/*
+	_____________________________________________________________________________________
+	The Quotidiane
+
+	The rest of the sync logic is such that it is not necessary to hold locks while 
+	calling these functions.
+	*/ 
+
 	public void moveDetective(int id, int target){
 		//perform sanity check on input. If failure, do nothing, just return
 		if (target < 0 || target > 63 || id < 0 || id > 4){
@@ -165,11 +189,15 @@ public class Board{
 		
 	}
 
+	
+
 	public void moveFugitive(int target){
-		this.time++;
+		if (this.playingThreads > 1){
+			this.time++;
+		}
 		
 		/*
-		time is defined in terms of fugitve moves
+		time is defined in terms of fugitve moves with at least one installed detective
 		a showDetective operation reveals the fugitives location when
 		the time is 3 mod 5
 
@@ -281,15 +309,7 @@ public class Board{
 
 	
 
-	//one-liner to install players on the map. Guaranteed to be called by
-	// a unique thread
-	public void installPlayer(int id){
-		if (id == -1){
-			this.fugitive = 42;
-			return;
-		}
-		this.detectives[id] = 0;
-	}
+	
 
 
 }
