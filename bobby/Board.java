@@ -9,7 +9,7 @@ import java.util.concurrent.Semaphore;
 public class Board{
 	private int[] detectives;
 	private int fugitive;
-	public int time;
+	private int time;
 
 	//SYNC SHARED VARIABLES
 	
@@ -45,13 +45,15 @@ public class Board{
 
 	public boolean[] availableIDs;
 
-	//is it worth playing anymore?
+	//is it playing anymore?
 	public boolean dead;
+
+	//_________________________________________________________________________________
 	
 	//SYNC PRIMITIVES: SEMAPHORES
 	
 	//for threads to take turns and respect timesteps
-	public Semaphore countProtector;
+	public Semaphore countProtector; 
 	public Semaphore barrier1;
 	public Semaphore barrier2;
 
@@ -81,19 +83,19 @@ public class Board{
 		this.totalThreads = 0;
 		this.playingThreads = 0;
 		this.quitThreads = 0;
-		this.dead = false;
+		this.dead = true;
 
-		this.countProtector = new Semaphore(1);
-		this.barrier1 = new Semaphore(0);
-		this.barrier2 = new Semaphore(0);
+		this.countProtector = new Semaphore(1); //mutex for count
+		this.barrier1 = new Semaphore(0); //permits for first part of cyclic barrier
+		this.barrier2 = new Semaphore(0); //permits for second part of cyclic barrier
 
-		this.moderatorEnabler = new Semaphore(1);
+		this.moderatorEnabler = new Semaphore(1); //permit for moderator
 		
-		this.threadInfoProtector = new Semaphore(1);
+		this.threadInfoProtector = new Semaphore(1); //mutex for all public variables other than count
 
-		this.registration = new Semaphore(0);
+		this.registration = new Semaphore(0); //permits for threads playing their first round
 
-		this.reentry = new Semaphore(0);
+		this.reentry = new Semaphore(0); //permits for threads to play a round
 	}
 
 	/*
@@ -120,6 +122,7 @@ public class Board{
 	public void erasePlayer(int id) {
 		if (id == -1) {
 			this.fugitive = -1;
+			this.dead = true;
 			return;
 		}
 		this.detectives[id] = -1;

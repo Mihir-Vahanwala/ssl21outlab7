@@ -32,6 +32,8 @@ public class Moderator implements Runnable{
 				playingThreads: how many began last round
 				quitThreads: how many quit in the last round
 				totalThreads: how many are ready to play next round
+
+				RECALL the invariant mentioned in Board.java
 				*/
 				
 				
@@ -45,7 +47,7 @@ public class Moderator implements Runnable{
 				We can set dead to true
 				*/
 
-				if (this.board.playingThreads == this.board.quitThreads && this.board.time != 0){
+				if (this.board.playingThreads == this.board.quitThreads && this.board.playingThreads != 0){
 					this.board.dead = true;
 				}
 
