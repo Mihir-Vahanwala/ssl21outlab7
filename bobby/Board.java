@@ -150,8 +150,7 @@ public class Board{
 	_____________________________________________________________________________________
 	The Quotidiane
 
-	The rest of the sync logic is such that it is not necessary to hold locks while 
-	calling these functions.
+	Is necessary to hold lock while calling these
 	*/ 
 
 	public void moveDetective(int id, int target){

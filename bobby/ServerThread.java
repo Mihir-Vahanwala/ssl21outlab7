@@ -225,12 +225,12 @@ public class ServerThread implements Runnable{
 
 				if (!quit){
 					this.roundsPlayed += 1;
-					
-					if (this.id == -1){
+					this.board.threadInfoProtector.acquire();
+					if (this.id == -1)   {
 						if (this.roundsPlayed == 0){
-							this.board.threadInfoProtector.acquire();
+							
 							this.board.embryo = false;
-							this.board.threadInfoProtector.release();
+							
 						}
 						this.board.moveFugitive(target);
 					}
@@ -239,7 +239,7 @@ public class ServerThread implements Runnable{
 						this.board.moveDetective(this.id, target);
 					}
 
-					
+					this.board.threadInfoProtector.release();
 						
 				}
 				
@@ -278,14 +278,14 @@ public class ServerThread implements Runnable{
 
 				if (!walkaway && this.roundsPlayed > 0){
 					String feedback;
-					
+					this.board.threadInfoProtector.acquire();
 					if (this.id == -1){
 						feedback = this.board.showFugitive();
 					}
 					else{
 						feedback = this.board.showDetective(this.id);
 					}
-					
+					this.board.threadInfoProtector.acquire();
 
 					//pass this to the client via the socket output
 					try{
