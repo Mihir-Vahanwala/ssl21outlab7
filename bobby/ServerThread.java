@@ -128,7 +128,21 @@ public class ServerThread implements Runnable{
 						socket.close();
 					}
 
-					if (cmd.equals("Q")) {
+					if (cmd == null){
+						// rage quit
+						this.board.threadInfoProtector.acquire();
+						this.board.erasePlayer(this.id);
+						this.board.threadInfoProtector.release();
+
+						// release everything socket related
+						quit = true;
+						walkaway = true;
+						input.close();
+						output.close();
+						socket.close();
+					}
+
+					else if (cmd.equals("Q")) {
 						// client wants to disconnect, so that is that.
 						this.board.threadInfoProtector.acquire();
 						this.board.erasePlayer(this.id);
@@ -285,7 +299,7 @@ public class ServerThread implements Runnable{
 					else{
 						feedback = this.board.showDetective(this.id);
 					}
-					this.board.threadInfoProtector.acquire();
+					this.board.threadInfoProtector.release();
 
 					//pass this to the client via the socket output
 					try{
