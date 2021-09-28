@@ -126,6 +126,7 @@ public class Board{
 	public void erasePlayer(int id) {
 		if (id == -1) {
 			this.fugitive = -1;
+			this.time++;
 			this.dead = true;
 			return;
 		}
@@ -141,6 +142,7 @@ public class Board{
 	public void installPlayer(int id) {
 		if (id == -1) {
 			this.fugitive = 42;
+			this.embryo = false;
 			return;
 		}
 		this.detectives[id] = 0;
