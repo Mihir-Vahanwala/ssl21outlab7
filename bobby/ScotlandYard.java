@@ -19,14 +19,16 @@ public class ScotlandYard implements Runnable{
 	*/
 
 	public int port;
+	public int gamenumber;
 
 	public ScotlandYard(int port){
 		this.port = port;
+		this.gamenumber = 0;
 	}
 
 	public void run(){
 		while (true){
-			Thread tau = new Thread(new ScotlandYardGame(this.port));
+			Thread tau = new Thread(new ScotlandYardGame(this.port, this.gamenumber));
 			tau.start();
 			try{
 				tau.join();
@@ -34,6 +36,7 @@ public class ScotlandYard implements Runnable{
 			catch (InterruptedException e){
 				return;
 			}
+			this.gamenumber++;
 		}
 	}
 
@@ -41,14 +44,16 @@ public class ScotlandYard implements Runnable{
 		private Board board;
 		private ServerSocket server;
 		public int port;
+		public int gamenumber;
 		private ExecutorService threadPool;
 
-		public ScotlandYardGame(int port){
+		public ScotlandYardGame(int port, int gamenumber){
 			this.port = port;
 			this.board = new Board();
+			this.gamenumber = gamenumber;
 			try{
 				this.server = new ServerSocket(port);
-				System.out.println(String.format("Game on, join Port %d", port));
+				System.out.println(String.format("Game %d:%d on", port, gamenumber));
 				server.setSoTimeout(5000);
 			}
 			catch (IOException i) {
@@ -85,11 +90,12 @@ public class ScotlandYard implements Runnable{
 						continue;
 					}
 				} while (!fugitiveIn);
-					
+				
+				System.out.println(this.gamenumber);
 				this.board.threadInfoProtector.acquire();
 				this.board.totalThreads += 1;
 				this.board.dead = false;
-				this.threadPool.execute(new ServerThread(this.board, -1, socket));
+				this.threadPool.execute(new ServerThread(this.board, -1, socket, this.port, this.gamenumber));
 				this.board.threadInfoProtector.release();
 
 				Thread mod = new Thread(new Moderator(board));
@@ -141,7 +147,7 @@ public class ScotlandYard implements Runnable{
 						continue;
 					}
 					
-					this.threadPool.execute(new ServerThread(this.board, potential, socket));
+					this.threadPool.execute(new ServerThread(this.board, potential, socket, this.port, this.gamenumber));
 					this.board.totalThreads += 1;
 
 					this.board.threadInfoProtector.release();
@@ -156,7 +162,7 @@ public class ScotlandYard implements Runnable{
 				mod.join();
 				this.server.close();
 				this.threadPool.shutdown();
-				System.out.println(String.format("Game Over, Port %d", port));
+				System.out.println(String.format("Game %d:%d Over", this.port, this.gamenumber));
 				return;
 			}
 			catch (InterruptedException ex){

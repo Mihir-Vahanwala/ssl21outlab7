@@ -16,8 +16,10 @@ public class ServerThread implements Runnable{
 	private BufferedReader input;
 	private PrintWriter output;
 	private Socket socket;
+	private int port;
+	private int gamenumber;
 
-	public ServerThread(Board board, int id, Socket socket){
+	public ServerThread(Board board, int id, Socket socket, int port, int gamenumber){
 		
 		this.board = board;
 
@@ -34,6 +36,8 @@ public class ServerThread implements Runnable{
 		}
 
 		this.socket = socket;
+		this.port = port;
+		this.gamenumber = gamenumber;
 	}
 
 	public void run(){
@@ -48,11 +52,14 @@ public class ServerThread implements Runnable{
 			try{
 				this.input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 				this.output = new PrintWriter(socket.getOutputStream(), true);
-				if (this.id == -1){
-					output.println("Welcome. You play Fugitive. You start on square 42. Make a move, and wait for feedback");
-				}
-				else{
-					output.println(String.format("Welcome. You play Detective %d. You start on square 0. Make a move, and wait for feedback", this.id));
+				if (this.id == -1) {
+					output.println(String.format(
+							"Welcome. You play Fugitive in Game %d:%d. You start on square 42. Make a move, and wait for feedback",
+							this.port, this.gamenumber));
+				} else {
+					output.println(String.format(
+							"Welcome. You play Detective %d in Game %d:%d. You start on square 0. Make a move, and wait for feedback",
+							this.id, this.port, this.gamenumber));
 				}
 			}
 			catch (IOException i){
