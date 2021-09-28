@@ -79,6 +79,7 @@ public class ServerThread implements Runnable{
 			while(true){
 				boolean quit = false;
 				boolean walkaway = false;
+				boolean quit_while_reading = false;
 				int target = -1;
 
 				/*
@@ -314,11 +315,18 @@ public class ServerThread implements Runnable{
 					}
 					//in case of IO Exception, we just drop the whole idea
 					catch(Exception i){
+						quit_while_reading = true;
 						quit = true;
 						walkaway = true;
-						this.board.threadInfoProtector.acquire();
-						this.board.erasePlayer(this.id);
-						this.board.threadInfoProtector.release();
+
+						if(this.id == -1){
+							this.board.threadInfoProtector.acquire();
+							this.board.dead = true;
+							this.board.threadInfoProtector.realease();
+						}
+						// this.board.threadInfoProtector.acquire();
+						// this.board.erasePlayer(this.id);
+						// this.board.threadInfoProtector.release();
 
 						// release everything socket related
 						input.close();
@@ -334,10 +342,17 @@ public class ServerThread implements Runnable{
 					indicator = feedback.split("; ")[2];
 
 					if (!indicator.equals("Play")){
+						quit_while_reading = true;
 						quit = true;
-						this.board.threadInfoProtector.acquire();
-						this.board.erasePlayer(this.id);
-						this.board.threadInfoProtector.release();
+
+						if(this.id == -1){
+							this.board.threadInfoProtector.acquire();
+							this.board.dead = true;
+							this.board.threadInfoProtector.realease();
+						}
+						// this.board.threadInfoProtector.acquire();
+						// this.board.erasePlayer(this.id);
+						// this.board.threadInfoProtector.release();
 
 						// release everything socket related
 						walkaway = true;
