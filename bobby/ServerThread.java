@@ -354,61 +354,75 @@ public class ServerThread implements Runnable{
 					}
 				}
 
+				
 				/*
 				__________________________________________________________________________________
-				PART 6A____________________________
-				wrapping up
-
-
-				everything that could make a thread quit has happened
-				now, look at the quit flag, and, if true, make changes in
-				totalThreads and quitThreads
-				*/
-
-				if (quit){
-					this.board.threadInfoProtector.acquire();
-					this.board.totalThreads --;
-					this.board.quitThreads++;
-					this.board.threadInfoProtector.release();
-				}
-
-				/*
-				__________________________________________________________________________________
-				PART 6B______________________________
+				PART 6A______________________________
 				second part of the cyclic barrier
 				that makes it reusable
 				
-				our threads must wait together before proceeding to the next round
+				our threads must wait together for everyone to read
+				before proceeding to the next round
 
 				Reuse count to keep track of how many threads hit this barrier2 
 
-				The code is similar. However, the last thread to hit this barrier must also 
-				permit the moderator to run
+				The code is similar to the first barrier
 				*/
 				this.board.countProtector.acquire();
 				this.board.count--;
 				if (this.board.count == 0) {
 					this.board.barrier2.release(this.board.playingThreads);
-					this.board.moderatorEnabler.release();
 				}
 				this.board.countProtector.release();
 				this.board.barrier2.acquire();
 
 				/*
 				__________________________________________________________________________________
-				PART 6C_________________________________
-				actually finishing off a thread
-				that decided to quit
+				PART 6B_________________________________
+				now, it is safe to edit the board again, and prepare to
+				call Moderator for the next round
+
+				*/
+
+				/*
+				if you are quitting, decrement totalThreads, increment quitThreads
+				also, if you quit while reading, now it is safe to erase yourself from the board.
 				*/
 				if (quit){
+					this.board.threadInfoProtector.acquire();
+					this.board.totalThreads --;
+					this.board.quitThreads++;
+					this.board.threadInfoProtector.release();
+					
 					if (quit_while_reading){
-						this.board.threadInfoProtector.acquire();
-						this.board.erasePlayer(this.id);
-						this.board.threadInfoProtector.release();
-						return;
+					this.board.threadInfoProtector.acquire();
+					this.board.erasePlayer(this.id);
+					this.board.threadInfoProtector.release();
 					}
+
+				}
+				
+
+				/*
+				now, count threads as they finish the loop and make the last guy
+				release the moderator permit
+				*/
+				this.board.countProtector.acquire();
+				this.board.count++;
+				if (this.board.count == this.board.playingThreads){
+					//last guy out
+					this.board.moderatorEnabler.release();
+					this.board.count = 0;
+				}
+				this.board.countProtector.release();
+
+				
+				//finally, let a quit thread return
+				if (quit){
 					return;
 				}
+				
+
 			}
 		}
 		catch (InterruptedException ex) {
