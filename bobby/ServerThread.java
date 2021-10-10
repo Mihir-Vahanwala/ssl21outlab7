@@ -278,10 +278,16 @@ public class ServerThread implements Runnable{
 				they must acquire a permit to cross. The last thread to hit the barrier can 
 				release permits for them all.
 				*/
+
+				int p;
+				this.board.threadInfoProtector.acquire();
+				p = this.board.playingThreads;
+				this.board.threadInfoProtector.release();
+
 				this.board.countProtector.acquire();
 				this.board.count++;
-				if (this.board.count == this.board.playingThreads){
-					this.board.barrier1.release(this.board.playingThreads);
+				if (this.board.count == p){
+					this.board.barrier1.release(p);
 				}
 				this.board.countProtector.release();
 				this.board.barrier1.acquire();
@@ -371,7 +377,8 @@ public class ServerThread implements Runnable{
 				this.board.countProtector.acquire();
 				this.board.count--;
 				if (this.board.count == 0) {
-					this.board.barrier2.release(this.board.playingThreads);
+					this.board.barrier2.release(p);
+					// this.board.moderatorEnabler.release();
 				}
 				this.board.countProtector.release();
 				this.board.barrier2.acquire();
@@ -395,30 +402,30 @@ public class ServerThread implements Runnable{
 					this.board.threadInfoProtector.release();
 					
 					if (quit_while_reading){
-					this.board.threadInfoProtector.acquire();
-					this.board.erasePlayer(this.id);
-					this.board.threadInfoProtector.release();
+						this.board.threadInfoProtector.acquire();
+						this.board.erasePlayer(this.id);
+						this.board.threadInfoProtector.release();
 					}
-
 				}
-				
 
-				/*
-				now, count threads as they finish the loop and make the last guy
-				release the moderator permit
-				*/
 				this.board.countProtector.acquire();
 				this.board.count++;
-				if (this.board.count == this.board.playingThreads){
-					//last guy out
-					this.board.moderatorEnabler.release();
-					this.board.count = 0;
+				if (this.board.count == p){
+					this.board.barrier1.release(p);
 				}
 				this.board.countProtector.release();
+				this.board.barrier1.acquire();
 
-				
-				//finally, let a quit thread return
-				if (quit){
+				this.board.countProtector.acquire();
+				this.board.count--;
+				if (this.board.count == 0) {
+					this.board.barrier2.release(p);
+					this.board.moderatorEnabler.release();
+				}
+				this.board.countProtector.release();
+				this.board.barrier2.acquire();
+
+				if(quit){
 					return;
 				}
 				
