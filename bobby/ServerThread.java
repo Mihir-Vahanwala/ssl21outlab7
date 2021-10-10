@@ -389,7 +389,7 @@ public class ServerThread implements Runnable{
 				this.board.count--;
 				if (this.board.count == 0) {
 					this.board.barrier2.release(this.board.playingThreads);
-					this.board.moderatorEnabler.release();
+					// this.board.moderatorEnabler.release();
 				}
 				this.board.countProtector.release();
 				this.board.barrier2.acquire();
@@ -405,8 +405,27 @@ public class ServerThread implements Runnable{
 						this.board.threadInfoProtector.acquire();
 						this.board.erasePlayer(this.id);
 						this.board.threadInfoProtector.release();
-						return;
 					}
+				}
+
+				this.board.countProtector.acquire();
+				this.board.count++;
+				if (this.board.count == this.board.playingThreads){
+					this.board.barrier1.release(this.board.playingThreads);
+				}
+				this.board.countProtector.release();
+				this.board.barrier1.acquire();
+
+				this.board.countProtector.acquire();
+				this.board.count--;
+				if (this.board.count == 0) {
+					this.board.barrier2.release(this.board.playingThreads);
+					this.board.moderatorEnabler.release();
+				}
+				this.board.countProtector.release();
+				this.board.barrier2.acquire();
+
+				if(quit){
 					return;
 				}
 			}
