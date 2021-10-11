@@ -119,6 +119,7 @@ public class ServerThread implements Runnable{
 				
 				if (this.id == -1 && !this.registered){
 					this.board.registration.acquire();
+					this.board.reentry.acquire();
 					this.registered = true;
 					this.board.threadInfoProtector.acquire();
 					this.board.installPlayer(id);
@@ -410,20 +411,28 @@ public class ServerThread implements Runnable{
 
 				this.board.countProtector.acquire();
 				this.board.count++;
-				if (this.board.count == this.board.playingThreads){
-					this.board.barrier1.release(this.board.playingThreads);
-				}
-				this.board.countProtector.release();
-				this.board.barrier1.acquire();
-
-				this.board.countProtector.acquire();
-				this.board.count--;
-				if (this.board.count == 0) {
-					this.board.barrier2.release(this.board.playingThreads);
+				if (this.board.count == this.board.playingThreads) {
+					this.board.count = 0;
 					this.board.moderatorEnabler.release();
 				}
 				this.board.countProtector.release();
-				this.board.barrier2.acquire();
+
+				// this.board.countProtector.acquire();
+				// this.board.count++;
+				// if (this.board.count == this.board.playingThreads){
+				// 	this.board.barrier1.release(this.board.playingThreads);
+				// }
+				// this.board.countProtector.release();
+				// this.board.barrier1.acquire();
+
+				// this.board.countProtector.acquire();
+				// this.board.count--;
+				// if (this.board.count == 0) {
+				// 	this.board.barrier2.release(this.board.playingThreads);
+				// 	this.board.moderatorEnabler.release();
+				// }
+				// this.board.countProtector.release();
+				// this.board.barrier2.acquire();
 
 				if(quit){
 					return;
